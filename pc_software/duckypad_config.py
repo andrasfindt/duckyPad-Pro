@@ -1,4 +1,5 @@
 import os
+import pathlib
 import sys
 import time
 import copy
@@ -141,7 +142,7 @@ Fixed a bug in preprocessing long STRINGLN commands
 
 THIS_VERSION_NUMBER = '2.2.0'
 MIN_DUCKYPAD_FIRMWARE_VERSION = "1.0.0"
-MAX_DUCKYPAD_FIRMWARE_VERSION = "1.5.0"
+MAX_DUCKYPAD_FIRMWARE_VERSION = "1.6.0"
 
 UI_SCALE = float(os.getenv("DUCKYPAD_UI_SCALE", default=1))
 USB_MSC_MOUNTPOINT = os.getenv("DUCKYPAD_MS_MOUNTPOINT", default=None)
@@ -845,7 +846,7 @@ def backup_button_click():
 def key_button_click_event(event):
     key_button_click(event.widget)
 
-root = Tk()
+root = Tk(className=appname)
 root.title("duckyPad Configurator v" + THIS_VERSION_NUMBER)
 root.geometry(str(MAIN_WINDOW_WIDTH) + "x" + str(MAIN_WINDOW_HEIGHT))
 root.resizable(width=FALSE, height=FALSE)
@@ -1656,4 +1657,19 @@ root.after(500, repeat_func)
 # select_root_folder("sample_profiles")
 my_compare.tk_root = root
 my_compare.tk_strvar = dp_root_folder_display
+
+def set_icon():
+    if 'win32' in sys.platform:
+        icon_filename = '_icon.ico'
+        current_dir = pathlib.Path(__file__).parent.resolve()
+        img_path = os.path.join(current_dir, icon_filename)
+        root.iconbitmap(img_path)
+    if 'linux' in sys.platform:
+        icon_filename = '_icon.png'
+        current_dir = pathlib.Path(__file__).parent.resolve()
+        img_path = os.path.join(current_dir, icon_filename)
+        icon = PhotoImage(file=img_path)
+        root.iconphoto(True, icon)
+
+root.after(50, set_icon())
 root.mainloop()
