@@ -514,21 +514,39 @@ uint8_t utf8ascii(uint8_t ascii)
   return 0; // otherwise: return zero, if character has to be ignored
 }
 
-my_key temp_shift_key;
-my_key temp_altgr_key;
-void kb_print_char(my_key *kk, int32_t chardelay, int32_t charjitter)
-{
-  /*
+/*
   kk.code is the ASCII character
   look it up in the keymap, result is uint16_t
   top 4 bits map to dead key 
   if no dead key, press as normal
   if has dead key, press it first
+
+  dead key first, dead key itself might contain MOD keys
   */
+my_key temp_shift_key;
+my_key temp_altgr_key;
+void kb_print_char(my_key *kk, int32_t chardelay, int32_t charjitter)
+{
   uint16_t duckcode = ascii_map[kk->code];
   if(duckcode == 0)
   	return;
-  uint16_t is_deadkey = duckcode & 0xf000;
+  if(duckcode & 0xf000) // deadkey
+  {
+    switch(duckcode >> 12)
+    {
+      case 1: deadkey.type = KEY_TYPE_DEAD_GRAVE_ACCENT; break;
+      case 2: deadkey.type = KEY_TYPE_DEAD_ACUTE_ACCENT; break;
+      case 3: deadkey.type = KEY_TYPE_DEAD_CIRCUMFLEX; break;
+      case 4: deadkey.type = KEY_TYPE_DEAD_TILDE; break;
+      case 5: deadkey.type = KEY_TYPE_DEAD_DIAERESIS; break;
+      case 6: deadkey.type = KEY_TYPE_DEAD_CEDILLA; break;
+      default: deadkey.type = KEY_TYPE_UNKNOWN; deadkey.code = 0;
+    }
+    action_press(&deadkey, 1);
+    delay_wrapper(chardelay, charjitter);
+    action_release(&deadkey);
+    delay_wrapper(chardelay, charjitter);
+  }
   if(duckcode & SHIFT)
   {
     temp_shift_key.type = KEY_TYPE_MODIFIER;
@@ -543,30 +561,10 @@ void kb_print_char(my_key *kk, int32_t chardelay, int32_t charjitter)
     action_press(&temp_altgr_key, 1);
     delay_wrapper(chardelay, charjitter);
   }
-  if(is_deadkey != 0) // deadkey
-  {
-    switch(duckcode >> 12)
-    {
-      case 1: deadkey.type = KEY_TYPE_DEAD_GRAVE_ACCENT; break;
-      case 2: deadkey.type = KEY_TYPE_DEAD_ACUTE_ACCENT; break;
-      case 3: deadkey.type = KEY_TYPE_DEAD_CIRCUMFLEX; break;
-      case 4: deadkey.type = KEY_TYPE_DEAD_TILDE; break;
-      case 5: deadkey.type = KEY_TYPE_DEAD_DIAERESIS; break;
-      case 6: deadkey.type = KEY_TYPE_DEAD_CEDILLA; break;
-      default: deadkey.type = KEY_TYPE_UNKNOWN; deadkey.code = 0;
-    }
-    action_press(&deadkey, 1);
-    delay_wrapper(chardelay, charjitter);
-  }
   action_press(kk, 1);
   delay_wrapper(chardelay, charjitter);
   action_release(kk);
   delay_wrapper(chardelay, charjitter);
-  if(is_deadkey != 0) // deadkey
-  {
-    action_release(&deadkey);
-    delay_wrapper(chardelay, charjitter);
-  }
   if(duckcode & ALT_GR)
   {
     action_release(&temp_altgr_key);

@@ -1,6 +1,6 @@
 # duckyPad Pro: Advanced Macro Scripting Beyond QMK/VIA
 
-[Support on Kickstarter!](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./doc/getting_started.md) | [Table of Contents](#table-of-contents)
+[Get duckyPad Pro](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./doc/getting_started.md) | [Table of Contents](#table-of-contents)
 
 -----------
 
@@ -325,7 +325,7 @@ duckyPad Pro has **20 Mechanical Switches** in **4x5 Grid.**
 
 ## Interested?
 
-Please consider [supporting duckyPad Pro on Kickstarter!](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via)
+You can [pre-order duckyPad Pro on Kickstarter!](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via)
 
 Join our [Official Discord](https://discord.gg/4sJCBx5) for discussions and updates!
 

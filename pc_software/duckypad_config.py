@@ -114,23 +114,28 @@ New for duckyPad Pro
 Fixed off-by-1 error in GOTO_PROFILE
 
 2.0.2 2024 12 17
+Fixed press-anykey-to-abort not working
 Fixed text parsed as comments in STRING blocks
+
+2.0.3 2024 12 19
+Adjusted text visibility for macOS dark mode
+Adjusted GOTO_PROFILE parsing order
+Increased default USB MSC timeout
+Adjusted macOS additional instruction warnings
+updated linux "need sudo" text box
 
 """
 
-THIS_VERSION_NUMBER = '2.0.2'
+THIS_VERSION_NUMBER = '2.0.3'
 MIN_DUCKYPAD_FIRMWARE_VERSION = "1.0.0"
 MAX_DUCKYPAD_FIRMWARE_VERSION = "1.5.0"
 
 UI_SCALE = float(os.getenv("DUCKYPAD_UI_SCALE", default=1))
 USB_MSC_MOUNTPOINT = os.getenv("DUCKYPAD_MS_MOUNTPOINT", default=None)
-USB_MSC_SECONDS_TO_WAIT = int(os.getenv("DUCKYPAD_MS_TIMEOUT", default=10))
+USB_MSC_SECONDS_TO_WAIT = int(os.getenv("DUCKYPAD_MS_TIMEOUT", default=15))
 
 def ensure_dir(dir_path):
     os.makedirs(dir_path, exist_ok=1)
-
-def is_root():
-    return os.getuid() == 0
 
 def scaled_size(size: int) -> int:
     return int(size * UI_SCALE)
@@ -196,9 +201,6 @@ def ui_reset():
     rotate_keys_checkbox.config(state=DISABLED)
     key_remove_button.config(state=DISABLED)
     key_name_textbox.config(state=DISABLED)
-    bg_color_label.config(fg='grey')
-    kd_color_label.config(fg='grey')
-    key_char_limit_label.config(fg='grey')
     reset_key_button_relief()
     update_key_button_appearances(None)
     key_name_textbox.delete('1.0', 'end')
@@ -320,7 +322,7 @@ def put_duckypad_in_msc_mode_and_get_drive_path(reset_ui=True):
         time_elapsed = time.time() - entry_time
         if time_elapsed > USB_MSC_SECONDS_TO_WAIT:
             break
-        dp_root_folder_display.set(f"duckyPad Pro detected! Waiting for storage... {int(USB_MSC_SECONDS_TO_WAIT - time_elapsed)}")
+        dp_root_folder_display.set(f"duckyPad detected! Waiting for storage... {int(USB_MSC_SECONDS_TO_WAIT - time_elapsed)}")
         root.update()
         time.sleep(0.5)
     dp_root_folder_display.set("")
@@ -328,7 +330,7 @@ def put_duckypad_in_msc_mode_and_get_drive_path(reset_ui=True):
 
 def connect_button_click():
     if hid_op.get_duckypad_path() is None:
-        if(messagebox.askokcancel("Info", "duckyPad not found!\n\nManually select a folder instead?") == False):
+        if(messagebox.askokcancel("Info", "duckyPad not found!\n\nSelect a folder manually instead?") == False):
             return
         select_root_folder()
         return
@@ -352,23 +354,13 @@ def connect_button_click():
         init_success = False
 
     if init_success is False and 'linux' in sys.platform:
-        box_result = messagebox.askyesnocancel("Info", "duckyPad detected, but additional permissions needed.\n\nClick Yes for instructions\n\nClick No to configure via SD card.")
+        box_result = messagebox.askokcancel("Info", "duckyPad detected, but please run me in sudo!\n\nClick OK to select a folder manually.")
         if box_result is True:
-            webbrowser.open('https://github.com/dekuNukem/duckyPad-Pro/blob/master/doc/linux_macos_notes.md')
-        elif box_result is False:
             select_root_folder()
         return
 
-    if init_success is False and 'darwin' in sys.platform and is_root() is False:
-        box_result = messagebox.askyesnocancel("Info", "duckyPad detected, but additional permissions needed to access it.\n\nClick Yes for instructions\n\nClick No to configure via SD card.")
-        if box_result is True:
-            webbrowser.open('https://github.com/dekuNukem/duckyPad-Pro/blob/master/doc/linux_macos_notes.md')
-        elif box_result is False:
-            select_root_folder()
-        return
-
-    if init_success is False and 'darwin' in sys.platform and is_root() is True:
-        box_result = messagebox.askyesnocancel("Info", "duckyPad detected, however, due to macOS restrictions, you need to enable some privacy settings.\n\nClick Yes to learn how.\n\nClick No to configure via SD card.")
+    if init_success is False and 'darwin' in sys.platform:
+        box_result = messagebox.askyesnocancel("Info", "duckyPad detected, but I need additional permissions!\n\nClick Yes for instructions\n\nClick No to select a folder manually.")
         if box_result is True:
             webbrowser.open('https://github.com/dekuNukem/duckyPad-Pro/blob/master/doc/linux_macos_notes.md')
         elif box_result is False:
@@ -377,7 +369,7 @@ def connect_button_click():
     
     duckypad_drive_path = put_duckypad_in_msc_mode_and_get_drive_path()
     if duckypad_drive_path is None:
-        if(messagebox.askokcancel("Info", "duckyPad drive not found!\n\nSelect manually instead?") == False):
+        if(messagebox.askokcancel("Info", "duckyPad drive not found!\n\nSelect a folder manually?") == False):
             return
         select_root_folder()
         return
@@ -397,9 +389,6 @@ def enable_buttons():
     dim_unused_keys_checkbox.config(state=NORMAL)
     rotate_keys_checkbox.config(state=NORMAL)
     key_remove_button.config(state=NORMAL)
-    bg_color_label.config(fg='black')
-    kd_color_label.config(fg='black')
-    key_char_limit_label.config(fg='black')
     profile_import_button.config(state=NORMAL)
     exp_page_plus_button.config(state=NORMAL)
     exp_page_minus_button.config(state=NORMAL)
@@ -694,21 +683,6 @@ def compile_all_scripts():
         messagebox.showerror("Error", error_msg)
     return False
 
-def copy_keymaps(dest_path):
-    source_keymap_folder = "keymaps"
-    destination_keymap_folder = os.path.join(dest_path, "keymaps")
-    if not os.path.isdir(source_keymap_folder):
-        return
-    ensure_dir(destination_keymap_folder)
-    for item in [str(x.path) for x in os.scandir(source_keymap_folder) if 'dpkm_' in x.path.lower() and x.path.lower().endswith('.txt')]:
-        destination_file = os.path.join(destination_keymap_folder, os.path.basename(item))
-
-        if not os.path.exists(destination_file):
-            print("Copying keymap:", item, destination_keymap_folder)
-            shutil.copy2(item, destination_keymap_folder)
-        else:
-            print(f"keymap already exists: {destination_file}")
-
 def save_everything(save_path):
     if compile_all_scripts() is False:
         return False
@@ -795,8 +769,6 @@ def save_everything(save_path):
                     config_file.write('SWCOLOR_%d %d %d %d\n' % (this_key.index, this_key.color[0], this_key.color[1], this_key.color[2]))
             config_file.close()
         
-        copy_keymaps(save_path)
-
         return True
     except Exception as e:
         error_msg = f"Save Failed:\n\n{e}"
@@ -805,7 +777,7 @@ def save_everything(save_path):
     return False
 
 def make_default_backup_dir_name():
-    return 'duckyPad_backup_' + datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    return 'duckyPad_Pro_backup_' + datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
 def save_click():
     this_backup_path = os.path.join(backup_path, make_default_backup_dir_name())
@@ -970,14 +942,14 @@ profile_dupe_button.place(x=PADDING * 2.5 + BUTTON_WIDTH, y=BUTTON_Y_POS, width=
 profile_rename_button = Button(profiles_lf, text="Rename", command=profile_rename_click, state=DISABLED)
 profile_rename_button.place(x=PADDING * 2.5 + BUTTON_WIDTH, y=BUTTON_Y_POS + BUTTON_HEIGHT + int(PADDING/2), width=BUTTON_WIDTH, height=BUTTON_HEIGHT)
 
-bg_color_label = Label(master=profiles_lf, text="Background color:", fg='grey')
+bg_color_label = Label(master=profiles_lf, text="Background color:")
 bg_color_label.place(x=scaled_size(20), y=scaled_size(355))
 
 bg_color_button = Label(master=profiles_lf, borderwidth=1, relief="solid")
 bg_color_button.place(x=scaled_size(160), y=scaled_size(356), width=scaled_size(60), height=scaled_size(20))
 bg_color_button.bind("<Button-1>", bg_color_click)
 
-kd_color_label = Label(master=profiles_lf, text="Activation color:", fg='grey')
+kd_color_label = Label(master=profiles_lf, text="Activation color:")
 kd_color_label.place(x=scaled_size(20), y=scaled_size(380))
 
 kd_color_button = Label(master=profiles_lf, borderwidth=1, relief="solid")
@@ -1182,8 +1154,8 @@ upper_re_cw.bind("<Button-1>", key_button_click_event)
 upper_re_cw.bind("<B1-Motion>", button_drag_start)
 upper_re_cw.bind("<ButtonRelease-1>", button_drag_release)
 key_button_list.append(upper_re_cw)
-r1cw_label = Label(master=re_lf, text="RE1 CW")
-r1cw_label.place(x=scaled_size(0), y=scaled_size(7))
+r1cw_label = Label(master=re_lf, text="RE1 -->")
+r1cw_label.place(x=scaled_size(5), y=scaled_size(7))
 
 upper_re_ccw = Label(master=re_lf, borderwidth=1, relief="solid", background=default_button_color, font=(None, 13))
 upper_re_ccw.place(x=scaled_size(60), y=scaled_size(35), width=RE_BUTTON_WIDTH, height=RE_BUTTON_HEIGHT)
@@ -1191,8 +1163,8 @@ upper_re_ccw.bind("<Button-1>", key_button_click_event)
 upper_re_ccw.bind("<B1-Motion>", button_drag_start)
 upper_re_ccw.bind("<ButtonRelease-1>", button_drag_release)
 key_button_list.append(upper_re_ccw)
-r1ccw_label = Label(master=re_lf, text="RE1 CCW")
-r1ccw_label.place(x=scaled_size(0), y=scaled_size(37))
+r1ccw_label = Label(master=re_lf, text="RE1 <--")
+r1ccw_label.place(x=scaled_size(5), y=scaled_size(37))
 
 upper_re_sw = Label(master=re_lf, borderwidth=1, relief="solid", background=default_button_color, font=(None, 13))
 upper_re_sw.place(x=scaled_size(60), y=scaled_size(65), width=RE_BUTTON_WIDTH, height=RE_BUTTON_HEIGHT)
@@ -1200,8 +1172,8 @@ upper_re_sw.bind("<Button-1>", key_button_click_event)
 upper_re_sw.bind("<B1-Motion>", button_drag_start)
 upper_re_sw.bind("<ButtonRelease-1>", button_drag_release)
 key_button_list.append(upper_re_sw)
-r1btn_label = Label(master=re_lf, text="RE1 Push")
-r1btn_label.place(x=scaled_size(0), y=scaled_size(67))
+r1btn_label = Label(master=re_lf, text="RE1   ↓")
+r1btn_label.place(x=scaled_size(5), y=scaled_size(67))
 
 lower_re_cw = Label(master=re_lf, borderwidth=1, relief="solid", background=default_button_color, font=(None, 13))
 lower_re_cw.place(x=scaled_size(60), y=scaled_size(95), width=RE_BUTTON_WIDTH, height=RE_BUTTON_HEIGHT)
@@ -1209,8 +1181,8 @@ lower_re_cw.bind("<Button-1>", key_button_click_event)
 lower_re_cw.bind("<B1-Motion>", button_drag_start)
 lower_re_cw.bind("<ButtonRelease-1>", button_drag_release)
 key_button_list.append(lower_re_cw)
-r2cw_label = Label(master=re_lf, text="RE2 CW")
-r2cw_label.place(x=scaled_size(0), y=scaled_size(97))
+r2cw_label = Label(master=re_lf, text="RE2 -->")
+r2cw_label.place(x=scaled_size(5), y=scaled_size(97))
 
 lower_re_ccw = Label(master=re_lf, borderwidth=1, relief="solid", background=default_button_color, font=(None, 13))
 lower_re_ccw.place(x=scaled_size(60), y=scaled_size(125), width=RE_BUTTON_WIDTH, height=RE_BUTTON_HEIGHT)
@@ -1218,8 +1190,8 @@ lower_re_ccw.bind("<Button-1>", key_button_click_event)
 lower_re_ccw.bind("<B1-Motion>", button_drag_start)
 lower_re_ccw.bind("<ButtonRelease-1>", button_drag_release)
 key_button_list.append(lower_re_ccw)
-r2ccw_label = Label(master=re_lf, text="RE2 CCW")
-r2ccw_label.place(x=scaled_size(0), y=scaled_size(127))
+r2ccw_label = Label(master=re_lf, text="RE2 <--")
+r2ccw_label.place(x=scaled_size(5), y=scaled_size(127))
 
 lower_re_sw = Label(master=re_lf, borderwidth=1, relief="solid", background=default_button_color, font=(None, 13))
 lower_re_sw.place(x=scaled_size(60), y=scaled_size(155), width=RE_BUTTON_WIDTH, height=RE_BUTTON_HEIGHT)
@@ -1227,8 +1199,8 @@ lower_re_sw.bind("<Button-1>", key_button_click_event)
 lower_re_sw.bind("<B1-Motion>", button_drag_start)
 lower_re_sw.bind("<ButtonRelease-1>", button_drag_release)
 key_button_list.append(lower_re_sw)
-r2btn_label = Label(master=re_lf, text="RE2 Push")
-r2btn_label.place(x=scaled_size(0), y=scaled_size(157))
+r2btn_label = Label(master=re_lf, text="RE2   ↓")
+r2btn_label.place(x=scaled_size(5), y=scaled_size(157))
 
 # unused, just to pad it out
 for x in range(ONBOARD_SPARE_GPIO_COUNT):
@@ -1242,7 +1214,7 @@ root.update()
 key_char_limit_portrait = "Name:\nmax 2 lines\n5 char per line"
 key_char_limit_landscape = "Name:\nmax 2 lines\n4 char per line"
 
-key_char_limit_label = Label(master=name_editor_lf, fg='grey')
+key_char_limit_label = Label(master=name_editor_lf)
 key_char_limit_label.place(x=scaled_size(17), y=scaled_size(0))
 root.update()
 
@@ -1531,7 +1503,7 @@ discord_button = Button(resources_lf, text="Discord\nChatroom", command=open_dis
 discord_button.place(x=scaled_size(300), y=scaled_size(0), width=scaled_size(100))
 
 troubleshoot_button = Button(resources_lf, text="Troubleshooting\nGuide", command=open_duckypad_troubleshooting_url)
-troubleshoot_button.place(x=scaled_size(450), y=scaled_size(0), width=scaled_size(100))
+troubleshoot_button.place(x=scaled_size(445), y=scaled_size(0), width=scaled_size(110))
 
 tindie_button = Button(resources_lf, text="Accessories &\nUpgrades", command=open_tindie_store)
 tindie_button.place(x=scaled_size(600), y=scaled_size(0), width=scaled_size(100))

@@ -1,6 +1,6 @@
 # duckyPad Assembly Guide
 
-[Support on Kickstarter!](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./doc/getting_started.md) | [Table of Contents](#table-of-contents)
+[Get duckyPad Pro](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./getting_started.md) | [Table of Contents](#table-of-contents)
 
 ------
 
@@ -137,6 +137,16 @@ And you're done!
 Head back to the [Quick Start Guide](./getting_started.md) to see how to use it!
 
 ![Alt text](../resources/photos/instructions/done.jpeg)
+
+## Expansion Module
+
+👇👇👇👇👇👇👇👇👇👇
+
+[See this guide](https://github.com/dekuNukem/duckyPad-expansion-modules/blob/master/README.md) to put your Expansion Module together!
+
+☝️☝️☝️☝️☝️☝️☝️☝️☝️☝️
+
+![Alt text](../resources/photos/instructions/exp.jpeg)
 
 ## Table of Contents
 
