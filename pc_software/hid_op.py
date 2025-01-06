@@ -106,10 +106,7 @@ def get_duckypad_drive_mac(vol_str):
     return vol_list[0].mountpoint
 
 def get_duckypad_drive_linux(vol_str):
-    vol_list = [x for x in psutil.disk_partitions() if vol_str.strip().lower() in x.mountpoint.strip().lower()]
-    if len(vol_list) == 0:
-        return None
-    return vol_list[0].mountpoint
+    return get_duckypad_drive_mac(vol_str)
 
 def get_duckypad_drive(vol_str):
     if 'win32' in sys.platform:
@@ -123,9 +120,11 @@ def get_duckypad_drive(vol_str):
 def eject_drive(vol_str):
     print("ejecting...")
     if 'darwin' in sys.platform:
-        os.system(f"umount {vol_str}")
-        return
-    time.sleep(1)
+        os.system(f"diskutil unmountDisk force {vol_str}")
+    elif 'linux' in sys.platform:
+        os.system(f"umount -l {vol_str}")
+    else:
+        time.sleep(1) # well, good enough for windows
 
 # result = get_duckypad_drive("DP24_9BB0")
 # print(result)
