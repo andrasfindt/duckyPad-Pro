@@ -1,22 +1,33 @@
 # duckyPad Pro Firmware Update Guide
 
-[Support on Kickstarter!](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./doc/getting_started.md) | [Table of Contents](#table-of-contents)
+[Get duckyPad Pro](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./getting_started.md) | [Table of Contents](#table-of-contents)
 
 -----
 
 ## Latest Firmware
 
-#### 1.0.1
+#### 1.1.0
 
-* 28 Nov 2024
+9 Jan 2025
 
-* 🐞 Bug Fix: `MOUSE_WHEEL` hangs when scrolling upwards
+* 🆕 Persistent Global Variables
+	* `$_GV0` to `$_GV15`
+	* Available on all profiles
+	* Persistent over reboots
+
+* 🆕 Added `_DP_MODEL` reserved variable
+
+* 🐞 Adjusted keypress counter implementation and logic
+
+* 🐞 Waking up from sleep with +/- button no longer changes profile
+
+* 🐞 Fixed typos
 
 👇👇👇👇👇👇👇👇👇👇
 
-[Download Here](https://github.com/dekuNukem/duckyPad-Pro/raw/master/firmware/DPP_FW_1.0.1_1f9a0eac.bin)
+[Download Here](https://github.com/dekuNukem/duckyPad-Pro/raw/master/firmware/DPP_FW_1.1.0_f0043533.bin)
 
-☝️☝️☝️☝️☝️☝️☝️☝️☝️☝️
+☝️☝️☝️☝️☝️☝️☝️☝️☝️☝️☝️
 
 ## Drag-and-Drop Update
 
@@ -51,6 +62,14 @@
 ![Alt text](../resources/photos/tinker/newver.png)
 
 ## Version History
+
+#### 1.0.3
+
+* 18 Dec 2024
+
+* 🆕 Added BT Mode Override: Auto/Always/Never
+
+* 🐞 Fixed Dead Key behaviour
 
 ### 1.0.1
 

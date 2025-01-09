@@ -13,11 +13,12 @@ find . -type f -name "*.eggs*" -exec rm -f {} \;
 find . -name "__pycache__" -exec rm -rf {} \;
 find . -type f -name ".component_hash" -exec rm {} +
 
-cd ./pc_software
-python _zip_source.py
-
-cd ../resources/sample_profiles
-python zip_sample.py
+cd ./resources/sample_profiles
+if [[ "$OSTYPE" == "msys" ]] ; then
+    python zip_sample.py
+else
+    python3 zip_sample.py
+fi
 
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 

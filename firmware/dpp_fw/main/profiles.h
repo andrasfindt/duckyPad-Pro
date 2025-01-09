@@ -42,6 +42,7 @@ typedef struct
   char sw_name_secondline[TOTAL_OBSW_COUNT][KEYNAME_SIZE];
   uint8_t sw_color[MECH_OBSW_COUNT][THREE]; // only mechanical keys have RGB LEDs
   uint8_t sw_activation_color[MECH_OBSW_COUNT][THREE];
+  uint8_t keypress_count[MAX_TOTAL_SW_COUNT];
   uint8_t dim_unused_keys;
   uint8_t is_landscape;
 } profile_info;
@@ -69,6 +70,8 @@ void generate_msc_flag_file(void);
 void save_persistent_state(uint8_t epilogue_value, uint8_t swid);
 uint8_t goto_profile_without_updating_rgb_LED(uint8_t profile_number);
 uint8_t load_persistent_state(void);
+void save_gv(void);
+void load_gv(void);
 
 extern uint8_t is_profile_load_complete;
 

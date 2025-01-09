@@ -399,7 +399,9 @@ cmd_MK_PLAYPAUSE : (KEY_MK_PLAYPAUSE, KEY_TYPE_MEDIA),
 cmd_MK_STOP : (KEY_MK_STOP, KEY_TYPE_MEDIA),
 }
 
-reserved_variable_dict = {
+GV_OFFSET = 64
+
+internal_variable_dict = {
 	'_DEFAULTDELAY': (0xffff - 0),
 	'_DEFAULTCHARDELAY': (0xffff - 1),
 	'_CHARJITTER': (0xffff - 2),
@@ -419,6 +421,28 @@ reserved_variable_dict = {
 	"_IS_SCROLLLOCK_ON": (0xffff - 16),
 	"_DONT_REPEAT": (0xffff - 17),
 	"_THIS_KEYID": (0xffff - 18),
+	"_DP_MODEL": (0xffff - 19),
 }
 
+global_variable_dict = {
+	"_GV0": (0xffff - GV_OFFSET - 0),
+	"_GV1": (0xffff - GV_OFFSET - 1),
+	"_GV2": (0xffff - GV_OFFSET - 2),
+	"_GV3": (0xffff - GV_OFFSET - 3),
+	"_GV4": (0xffff - GV_OFFSET - 4),
+	"_GV5": (0xffff - GV_OFFSET - 5),
+	"_GV6": (0xffff - GV_OFFSET - 6),
+	"_GV7": (0xffff - GV_OFFSET - 7),
+	"_GV8": (0xffff - GV_OFFSET - 8),
+	"_GV9": (0xffff - GV_OFFSET - 9),
+	"_GV10": (0xffff - GV_OFFSET - 10),
+	"_GV11": (0xffff - GV_OFFSET - 11),
+	"_GV12": (0xffff - GV_OFFSET - 12),
+	"_GV13": (0xffff - GV_OFFSET - 13),
+	"_GV14": (0xffff - GV_OFFSET - 14),
+	"_GV15": (0xffff - GV_OFFSET - 15),
+}
+
+reserved_variable_dict = internal_variable_dict | global_variable_dict
+print(global_variable_dict)
 MAX_NUMBER_OF_VARIABLES = 64

@@ -339,10 +339,13 @@ def get_key_combined_value(keyname):
 def get_partial_varname_addr(msg, vad):
     if len(msg) == 0:
         return None, None
+    last_match = None
     for x in range(len(msg)+1):
         partial_name = msg[:x]
         if partial_name in vad:
-            return partial_name, vad[partial_name]
+            last_match = partial_name
+    if last_match is not None:
+        return last_match, vad[last_match]
     return None, None
 
 def replace_var_in_str(msg, vad):
@@ -624,6 +627,7 @@ def make_dsb_with_exception(program_listing, profile_list=None):
     VAR_SIZE_BYTES = 2
     var_addr_dict = {}
     var_count = 0
+    # assign address to all variables
     for item in var_lookup:
         if item in reserved_variable_dict:
             var_addr_dict[item] = reserved_variable_dict[item]

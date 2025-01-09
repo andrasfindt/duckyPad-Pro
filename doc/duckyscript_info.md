@@ -1,6 +1,6 @@
 # Writing duckyScript
 
-[Support on Kickstarter!](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./doc/getting_started.md) | [Table of Contents](#table-of-contents)
+[Get duckyPad Pro](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./getting_started.md) | [Table of Contents](#table-of-contents)
 
 ------
 
@@ -525,11 +525,11 @@ See [Randomisation](#randomisation)
 
 #### `$_TIME_S` (RO)
 
-Get current time in **seconds**.
+Get elapsed time since power-on in **seconds**.
 
 #### `$_TIME_MS` (RO)
 
-Get current time in **milliseconds**.
+Get elapsed time since power-on in **milliseconds**.
 
 #### `$_READKEY` (RO)
 
@@ -544,6 +544,45 @@ See [Reading Inputs](#reading-inputs)
 #### `$_IS_SCROLLLOCK_ON` (RO)
 
 Returns 1 if true, 0 otherwise.
+
+#### `$_DEFAULTDELAY` (RW)
+
+#### `$_DEFAULTCHARDELAY` (RW)
+
+#### `$_CHARJITTER` (RW)
+
+Alias for their respective commands
+
+#### `$_ALLOW_ABORT` (RW)
+
+#### `$_DONT_REPEAT` (RW)
+
+Set to 1 to enable, 0 to disable.
+
+#### `$_THIS_KEYID` (RO)
+
+Returns the [Key ID](#key-id) for the **current script**.
+
+#### `$_DP_MODEL` (RO)
+
+Returns:
+
+* `1` for duckyPad (2020)
+* `2` for duckyPad Pro (2024)
+
+#### `$_KEYPRESS_COUNT` (RW)
+
+Returns how many times the current key have been pressed **in the current profile**.
+
+Assign 0 to reset.
+
+#### `$_LOOP_SIZE` (RO)
+
+Used by `LOOP` command, do not modify.
+
+#### `$_NEEDS_EPILOGUE` (RO)
+
+Used internally. Do not modify.
 
 -------
 [⬆️⬆️⬆️⬆️⬆️⬆️ Back to Top ⬆️⬆️⬆️⬆️⬆️⬆️](#list-of-commands)
