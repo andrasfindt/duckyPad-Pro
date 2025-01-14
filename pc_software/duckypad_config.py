@@ -1446,6 +1446,12 @@ on_release_rb = Radiobutton(scripts_lf, text="On Release", variable=on_press_rel
 on_release_rb.place(x=scaled_size(150), y=scaled_size(20))
 root.update()
 
+def make_list_of_ds_line_obj_from_str_listing(pgm_listing):
+    obj_list = []
+    for index, item in enumerate(pgm_listing):
+        obj_list.append(ds_line(item, index+1))
+    return obj_list
+
 last_check_syntax_listing = []
 def check_syntax():
     global last_check_syntax_listing
@@ -1458,8 +1464,12 @@ def check_syntax():
     if on_press_release_rb_var.get() == 1:
         program_listing = profile_list[profile_index].keylist[selected_key].script_on_release.split('\n')
     if program_listing == last_check_syntax_listing:
+    if program_listing == last_check_syntax_listing:
         # print("check_syntax: same")
         return
+    last_check_syntax_listing = program_listing.copy()
+    ds_line_obj_list = make_list_of_ds_line_obj_from_str_listing(program_listing)
+    result_dict, bin_arr = make_bytecode.make_dsb_no_exception(ds_line_obj_list, profile_list)
     last_check_syntax_listing = program_listing.copy()
     ds_line_obj_list = make_list_of_ds_line_obj_from_str_listing(program_listing)
     result_dict, bin_arr = make_bytecode.make_dsb_no_exception(ds_line_obj_list, profile_list)
@@ -1468,7 +1478,9 @@ def check_syntax():
         check_syntax_label.config(text="Code seems OK..", fg="green")       
         return
     error_lnum = result_dict['error_line_number_starting_from_1']
+    error_lnum = result_dict['error_line_number_starting_from_1']
     error_text = result_dict['comments']
+    script_textbox.tag_add("error", str(error_lnum)+".0", str(error_lnum)+".0 lineend")
     script_textbox.tag_add("error", str(error_lnum)+".0", str(error_lnum)+".0 lineend")
     check_syntax_label.config(text=error_text, fg='red')
 
@@ -1654,7 +1666,7 @@ def repeat_func():
 
 root.after(500, repeat_func)
 
-# select_root_folder("sample_profiles")
+select_root_folder("sample_profiles")
 my_compare.tk_root = root
 my_compare.tk_strvar = dp_root_folder_display
 
