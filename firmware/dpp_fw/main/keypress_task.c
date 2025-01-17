@@ -74,12 +74,14 @@ void der_init(ds3_exe_result* der)
 #define DSB_ALLOW_AUTOREPEAT 0
 #define DSB_DONT_PLAY_KEYUP_ANIMATION_RETURN_IMMEDIATELY 1
 #define DSB_DONT_REPEAT_RETURN_IMMEDIATELY 2
-uint8_t run_once(uint8_t swid, char* dsb_path)
+uint8_t run_once(uint8_t swid, char* dsb_path, uint8_t* to_increment)
 {
   der_init(&this_exe);
   run_dsb(&this_exe, swid, dsb_path);
   // printf("---\nexecution finished:\nresult: %d\ndata: %d\nepilogue: 0x%x\n---\n", this_exe.result, this_exe.data, this_exe.epilogue_actions);
-
+  if(to_increment != NULL)
+    *to_increment = *to_increment + 1;
+  
   uint8_t what_to_do = DSB_ALLOW_AUTOREPEAT;
 
   if(this_exe.result == EXE_ABORTED)
@@ -97,6 +99,10 @@ uint8_t run_once(uint8_t swid, char* dsb_path)
     return DSB_DONT_PLAY_KEYUP_ANIMATION_RETURN_IMMEDIATELY;
   }
 
+  if(this_exe.epilogue_actions & EPILOGUE_SAVE_GV)
+  {
+    save_gv();
+  }
   if(this_exe.epilogue_actions & EPILOGUE_SAVE_LOOP_STATE)
   {
     save_persistent_state(this_exe.epilogue_actions, swid);
@@ -151,9 +157,9 @@ void onboard_offboard_switch_press(uint8_t swid, char* press_path, char* release
   if(access(press_path, F_OK))
     return;
   play_keydown_animation(current_profile_number, swid);
-  key_press_count[swid]++;
+  uint8_t* to_increment = &all_profile_info[current_profile_number].keypress_count[swid];
   //-------------
-  uint8_t run_result = run_once(swid, press_path);
+  uint8_t run_result = run_once(swid, press_path, to_increment);
   if(run_result == DSB_DONT_PLAY_KEYUP_ANIMATION_RETURN_IMMEDIATELY)
     return;
   // don't repeat if on_release script exists
@@ -175,8 +181,8 @@ void onboard_offboard_switch_press(uint8_t swid, char* press_path, char* release
   {
     if(poll_sw_state(swid, 1) == 0)
       break;
-    key_press_count[swid]++;
-    if(run_once(swid, press_path) == DSB_DONT_PLAY_KEYUP_ANIMATION_RETURN_IMMEDIATELY)
+    uint8_t* to_increment = &all_profile_info[current_profile_number].keypress_count[swid];
+    if(run_once(swid, press_path, to_increment) == DSB_DONT_PLAY_KEYUP_ANIMATION_RETURN_IMMEDIATELY)
       return;
   }
   handle_obsw_keydown_end:
@@ -255,7 +261,7 @@ void onboard_offboard_switch_release(uint8_t swid, char* release_path)
 {
   if(access(release_path, F_OK))
     return;
-  run_once(swid, release_path);
+  run_once(swid, release_path, NULL);
   play_keyup_animation(current_profile_number, swid);
 }
 
@@ -337,8 +343,8 @@ void rotary_encoder_activity(uint8_t swid)
   sprintf(dsb_on_press_path_buf, "/sdcard/%s/key%d.dsb", all_profile_info[current_profile_number].dir_path, swid+1);
   if(access(dsb_on_press_path_buf, F_OK))
     return;
-  key_press_count[swid]++;
-  run_once(swid, dsb_on_press_path_buf);
+  all_profile_info[current_profile_number].keypress_count[swid]++;
+  run_once(swid, dsb_on_press_path_buf, NULL);
 }
 
 void handle_rotary_encoder_event(rotary_encoder_event_t* this_re_event)
@@ -356,13 +362,20 @@ void handle_rotary_encoder_event(rotary_encoder_event_t* this_re_event)
   rotary_encoder_activity(swid);
 }
 
-
-
 void handle_sw_event(switch_event_t* this_sw_event)
 {
   update_last_keypress();
   // printf("swid: %d type: %d\n", this_sw_event->id, this_sw_event->type);
-  if(is_sleeping && this_sw_event->type == SW_EVENT_SHORT_PRESS)
+  if(is_sleeping && is_plus_minus_button(this_sw_event->id) && this_sw_event->type != SW_EVENT_RELEASE)
+  {
+    return;
+  }
+  else if(is_sleeping && !is_plus_minus_button(this_sw_event->id) && this_sw_event->type == SW_EVENT_SHORT_PRESS)
+  {
+    wakeup_from_sleep_and_load_profile(current_profile_number);
+    return;
+  }
+  else if(is_sleeping && is_plus_minus_button(this_sw_event->id) && this_sw_event->type == SW_EVENT_RELEASE)
   {
     wakeup_from_sleep_and_load_profile(current_profile_number);
     return;
@@ -374,7 +387,6 @@ void handle_sw_event(switch_event_t* this_sw_event)
   if(execution_duration > 500)
     clear_sw_re_queue();
 }
-
 void keypress_task(void *dummy)
 {
   update_last_keypress();

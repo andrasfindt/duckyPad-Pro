@@ -83,7 +83,7 @@ def check_rvalue(rvalue_str, vt):
         if "$"+key in rvalue_str:
             rvalue_str = rvalue_str.replace("$"+key, str(vt[key])).strip()
     rvalue_str = rvalue_str.replace("^", "**")
-    print("rvalue_str after replacement:", rvalue_str)
+    # print("rvalue_str after replacement:", rvalue_str)
 
     if contains_english_alphabet(rvalue_str):
         return False, "unknown variable or invalid character"
@@ -109,25 +109,28 @@ def is_valid_expr(whole_line, vt):
     return presult, pcomment
 
 def assign_var(var_keyword, pgm_line, vt, check_duplicate=False):
+    has_global_variable = False
     try:
         var_sides = pgm_line.split(var_keyword, 1)[-1].split('=')
         lvalue = var_sides[0].split("$")[-1].rstrip()
         rvalue = var_sides[1].lstrip()
     except Exception as e:
-        return PARSE_ERROR, "var declaration parse failed"
+        return PARSE_ERROR, "var declaration parse failed", has_global_variable
     # print([lvalue, rvalue])
+    if lvalue in global_variable_dict:
+        has_global_variable = True
     if_valid_vn, vn_comment = is_valid_var_name(lvalue)
     if if_valid_vn is False:
-        return PARSE_ERROR, vn_comment
+        return PARSE_ERROR, vn_comment, has_global_variable
     is_valid_rv, rv_comment = check_rvalue(rvalue, vt)
     if is_valid_rv is False:
-        return PARSE_ERROR, rv_comment
+        return PARSE_ERROR, rv_comment, has_global_variable
     if var_keyword == cmd_VAR_ASSIGN and lvalue not in vt:
-        return PARSE_ERROR, "unknown variable"
+        return PARSE_ERROR, "unknown variable", has_global_variable
     if check_duplicate and lvalue in vt:
-        return PARSE_ERROR, "variable already declared"
+        return PARSE_ERROR, "variable already declared", has_global_variable
     vt[lvalue] = 127 # the actual value doesn't matter, since it will change at runtime anyway
-    return PARSE_OK, ''
+    return PARSE_OK, '', has_global_variable
 
 def new_rem_block_check(pgm_line, lnum, rbss, rbdict):
     if len(rbss) != 0:
@@ -440,6 +443,7 @@ def run_once(program_listing):
     'loop_state_save_needed':False,
     'color_state_save_needed':False,
     'oled_restore_needed':False,
+    'has_global_variable':False,
     'loop_size':None,
     'rem_block_table':None,
     'strlen_block_table':None,
@@ -448,9 +452,9 @@ def run_once(program_listing):
 
     loop_numbers = set()
 
-    for line_number_starting_from_1, this_line in enumerate(program_listing):
-        line_number_starting_from_1 += 1
-        this_line = this_line.lstrip(' \t')
+    for line_obj in program_listing:
+        line_number_starting_from_1 = line_obj.lnum_sf1
+        this_line = line_obj.content.lstrip(' \t')
         if len(this_line) == 0:
             continue
 
@@ -491,9 +495,13 @@ def run_once(program_listing):
         elif first_word == cmd_DEFINE:
             presult, pcomment = new_define(this_line, define_dict)
         elif first_word == cmd_VAR_DECLARE:
-            presult, pcomment = assign_var(cmd_VAR_DECLARE, this_line, var_table, check_duplicate=True)
+            presult, pcomment, has_gv = assign_var(cmd_VAR_DECLARE, this_line, var_table, check_duplicate=True)
+            if has_gv:
+                return_dict["has_global_variable"] = True
         elif first_word[0] == "$":
-            presult, pcomment = assign_var(cmd_VAR_ASSIGN, this_line, var_table)
+            presult, pcomment, has_gv = assign_var(cmd_VAR_ASSIGN, this_line, var_table)
+            if has_gv:
+                return_dict["has_global_variable"] = True
         elif first_word == cmd_FUNCTION:
             presult, pcomment = new_func_check(this_line, line_number_starting_from_1, func_search_stack, func_table)
         elif first_word == cmd_END_FUNCTION:
@@ -588,6 +596,7 @@ def run_once(program_listing):
         
         if presult == PARSE_ERROR:
             # error_message = f"PARSE ERROR at Line {line_number_starting_from_1}: {this_line}\n{pcomment}"
+            # print(error_message)
             return_dict['is_success'] = False
             return_dict['comments'] = pcomment
             return_dict['error_line_number_starting_from_1'] = line_number_starting_from_1
@@ -674,15 +683,17 @@ def split_string(input_string, max_length=STRING_MAX_SIZE):
         return [input_string]
     return [input_string[i:i+max_length] for i in range(0, len(input_string), max_length)]
 
-def split_str_cmd(cmd_type, this_line):
-    str_content = this_line.split(cmd_type + " ", 1)[-1]
+def split_str_cmd(cmd_type, line_obj):
+    str_content = line_obj.content.split(cmd_type + " ", 1)[-1]
     if len(str_content) <= STRING_MAX_SIZE:
-        return [this_line]
+        return [line_obj]
     cmd_list = []
     for item in split_string(str_content):
-        cmd_list.append(cmd_STRING + " " + item)
+        new_obj = ds_line(content=f"{cmd_STRING} {item}", lnum_sf1=line_obj.lnum_sf1)
+        cmd_list.append(new_obj)
     if cmd_type == cmd_STRINGLN:
-        cmd_list[-1] = cmd_list[-1].replace(cmd_STRING, cmd_STRINGLN, 1)
+        new_obj = ds_line(content=f"{cmd_ENTER}", lnum_sf1=line_obj.lnum_sf1)
+        cmd_list.append(new_obj)
     return cmd_list
 
 def search_profile_index_from_name(query, profile_list):
@@ -713,21 +724,21 @@ def check_swcolor(pgm_line, first_word):
 
 def run_all(program_listing, profile_list=None):
     new_program_listing = []
-    for this_line in program_listing:
-        first_word = this_line.lstrip(" \t").split(" ")[0]
+    for line_obj in program_listing:
+        first_word = line_obj.content.lstrip(" \t").split(" ")[0]
 
         # parse GOTO_PROFILE commands
         if first_word == cmd_GOTO_PROFILE_NAME:
-            this_line = this_line.replace(cmd_GOTO_PROFILE_NAME, cmd_GOTO_PROFILE, 1)
+            line_obj.content = line_obj.content.replace(cmd_GOTO_PROFILE_NAME, cmd_GOTO_PROFILE, 1)
             first_word = cmd_GOTO_PROFILE
 
         if first_word == cmd_GOTO_PROFILE:
-            target_profile_name = this_line.split(cmd_GOTO_PROFILE, 1)[-1].strip()
+            target_profile_name = line_obj.content.split(cmd_GOTO_PROFILE, 1)[-1].strip()
             target_profile_index_0_indexed = search_profile_index_from_name(target_profile_name, profile_list)
             if target_profile_index_0_indexed is not None:
-                this_line = f"{cmd_GOTO_PROFILE} {target_profile_index_0_indexed + 1}"
+                line_obj.content = f"{cmd_GOTO_PROFILE} {target_profile_index_0_indexed + 1}"
 
-        new_program_listing.append(this_line)
+        new_program_listing.append(line_obj)
 
     program_listing = new_program_listing
 
@@ -737,40 +748,40 @@ def run_all(program_listing, profile_list=None):
         return rdict
     
     new_program_listing = []
-    for line_number_starting_from_1, this_line in enumerate(program_listing):
-        line_number_starting_from_1 += 1
+    for line_obj in program_listing:
+        line_number_starting_from_1 = line_obj.lnum_sf1
 
         if is_within_strlen_block(line_number_starting_from_1, rdict['strlen_block_table']):
-            this_line = "STRINGLN " + this_line
+            line_obj.content = "STRINGLN " + line_obj.content
         elif is_within_str_block(line_number_starting_from_1, rdict['str_block_table']):
-            this_line = "STRING " + this_line
+            line_obj.content = "STRING " + line_obj.content
         else:
-            this_line = this_line.lstrip(' \t')
+            line_obj.content = line_obj.content.lstrip(' \t')
 
-        if len(this_line) == 0:
+        if len(line_obj.content) == 0:
             continue
 
-        first_word = this_line.split(" ")[0]
-        first_word, this_line = replace_delay_statements(this_line)
+        first_word = line_obj.content.split(" ")[0]
+        first_word, line_obj.content = replace_delay_statements(line_obj.content)
 
         if first_word in [cmd_STRINGLN_BLOCK, cmd_END_STRINGLN, cmd_STRING_BLOCK, cmd_END_STRING]:
             continue
 
         if first_word in [cmd_STRINGLN, cmd_STRING]:
-            for item in split_str_cmd(first_word, this_line):
+            for item in split_str_cmd(first_word, line_obj):
                 new_program_listing.append(item)
         else:
-            new_program_listing.append(this_line)
+            new_program_listing.append(line_obj)
 
     program_listing = new_program_listing
 
     # ---------------------
 
     new_program_listing = []
-    for this_line in program_listing:
+    for line_obj in program_listing:
         # remove leading space and tabs
-        this_line = this_line.lstrip(" \t")
-        first_word = this_line.split(" ")[0]
+        line_obj.content = line_obj.content.lstrip(" \t")
+        first_word = line_obj.content.split(" ")[0]
 
         # remove single-line comments 
         if first_word == cmd_REM or first_word.startswith(cmd_C_COMMENT):
@@ -778,10 +789,10 @@ def run_all(program_listing, profile_list=None):
 
         # remove INJECT_MOD
         if first_word == cmd_INJECT_MOD:
-            this_line = this_line.replace(cmd_INJECT_MOD, "", 1)
+            line_obj.content = line_obj.content.replace(cmd_INJECT_MOD, "", 1)
 
-        this_line = this_line.lstrip(" \t")
-        new_program_listing.append(this_line)
+        line_obj.content = line_obj.content.lstrip(" \t")
+        new_program_listing.append(line_obj)
 
     program_listing = new_program_listing
 
@@ -793,7 +804,6 @@ def run_all(program_listing, profile_list=None):
 
     # ----------- make condensed version ----------
 
-    def_dict = rdict['define_dict']
     second_pass_program_listing = []
     needs_end_if = False
 
@@ -804,26 +814,29 @@ def run_all(program_listing, profile_list=None):
         epilogue |= 0x2
     if rdict['oled_restore_needed']:
         epilogue |= 0x4
+    # 0x8 is disable_autorepeat, generated on duckypad itself
+    if rdict['has_global_variable']:
+        epilogue |= 0x10
 
     if epilogue != 0:
-        second_pass_program_listing.append((1, f"$_NEEDS_EPILOGUE = {epilogue}"))
+        second_pass_program_listing.append(ds_line(content=f"$_NEEDS_EPILOGUE = {epilogue}"))
     if rdict['loop_size'] is not None:
-        second_pass_program_listing.append((1, f"$_LOOP_SIZE = {rdict['loop_size']+1}"))
+        second_pass_program_listing.append(ds_line(content=f"$_LOOP_SIZE = {rdict['loop_size']+1}"))
 
-    for line_number_starting_from_1, this_line in enumerate(program_listing):
-        line_number_starting_from_1 += 1
-        this_line = this_line.lstrip(' \t')
+    for line_obj in program_listing:
+        line_number_starting_from_1 = line_obj.lnum_sf1
+        this_line = line_obj.content.lstrip(' \t')
         if len(this_line) == 0:
             continue
         first_word = this_line.split(" ")[0]
         if is_within_rem_block(line_number_starting_from_1, rdict['rem_block_table']):
             continue
         if needs_rstrip(first_word):
-            this_line = this_line.rstrip(" \t")
+            line_obj.content = this_line.rstrip(" \t")
         if first_word == cmd_REM or this_line.startswith(cmd_C_COMMENT):
             continue
         if first_word != cmd_DEFINE:
-            is_success, replaced_str = replace_DEFINE(this_line, def_dict)
+            is_success, replaced_str = replace_DEFINE(this_line, rdict['define_dict'])
             if is_success is False:
                 rdict['is_success'] = False
                 rdict['comments'] = "Recursive DEFINE"
@@ -831,7 +844,7 @@ def run_all(program_listing, profile_list=None):
                 rdict['error_line_str'] = this_line
                 return rdict
             else:
-                this_line = replaced_str
+                line_obj.content = replaced_str
         else:
             continue
 
@@ -850,23 +863,23 @@ def run_all(program_listing, profile_list=None):
             this_str = f"{cmd_SWCC} "
             for item in arg_list:
                 this_str += f"{item} "
-            second_pass_program_listing.append((line_number_starting_from_1, this_str))
+            second_pass_program_listing.append(ds_line(this_str, line_number_starting_from_1))
         elif this_line.startswith(cmd_LOOP):
             presult, pcomment, value = check_loop(this_line)
             if needs_end_if:
-                second_pass_program_listing.append((line_number_starting_from_1, cmd_END_IF))
+                second_pass_program_listing.append(ds_line(cmd_END_IF, line_number_starting_from_1))
             loop_str = f'{cmd_IF} $_KEYPRESS_COUNT % $_LOOP_SIZE == {value} {cmd_THEN}'
-            second_pass_program_listing.append((line_number_starting_from_1, loop_str))
+            second_pass_program_listing.append(ds_line(loop_str, line_number_starting_from_1))
             needs_end_if = True
         else:
-            second_pass_program_listing.append((line_number_starting_from_1, this_line))
+            second_pass_program_listing.append(line_obj)
 
     if needs_end_if:
-        second_pass_program_listing.append((line_number_starting_from_1, cmd_END_IF))
+        second_pass_program_listing.append(ds_line(cmd_END_IF, line_number_starting_from_1))
 
     print("---------Second Pass OK!---------\n")
 
-    final_dict = run_once([x[1] for x in second_pass_program_listing])
+    final_dict = run_once(second_pass_program_listing)
     final_dict["compact_listing"] = second_pass_program_listing
 
     if_info_list = []

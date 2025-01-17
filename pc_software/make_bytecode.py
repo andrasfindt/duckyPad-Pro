@@ -4,7 +4,6 @@ import ast
 import myast
 from keywords import *
 import traceback
-# import wat
 
 """
 duckyscript VM changelog
@@ -18,8 +17,6 @@ Added VMVER to aid version checking
 mouse move and mouse scroll arguments on stack
 more changes at the end of bytecode_vm.md
 """
-
-current_line_content = ''
 
 DS_VM_VERSION = 1
 
@@ -126,13 +123,18 @@ label_dict = None
 func_lookup = None
 str_lookup = None
 
+current_line_number_sf1 = 0
+current_line_content = ''
+
 def get_empty_instruction():
     return {
     'opcode':OP_NOP,
     'oparg':None,
     'label':None,
     'comment':None,
-    'addr':None}
+    'addr':None,
+    'lnum_sf1':current_line_number_sf1
+    }
 
 def print_instruction(instruction):
     if instruction['label'] is not None:
@@ -339,10 +341,13 @@ def get_key_combined_value(keyname):
 def get_partial_varname_addr(msg, vad):
     if len(msg) == 0:
         return None, None
+    last_match = None
     for x in range(len(msg)+1):
         partial_name = msg[:x]
         if partial_name in vad:
-            return partial_name, vad[partial_name]
+            last_match = partial_name
+    if last_match is not None:
+        return last_match, vad[last_match]
     return None, None
 
 def replace_var_in_str(msg, vad):
@@ -372,6 +377,13 @@ def push_1_constant_on_stack(value, comment=None):
         this_instruction['comment'] = comment
     return this_instruction
 
+"""
+returns: status, dsb_binary_array
+
+status is None if successful
+dsb_binary_array is None if fail
+
+"""
 def make_dsb_with_exception(program_listing, profile_list=None):
     global if_skip_table
     global if_info_list
@@ -382,7 +394,9 @@ def make_dsb_with_exception(program_listing, profile_list=None):
     global func_lookup
     global str_lookup
     global current_line_content
+    global current_line_number_sf1
 
+    current_line_number_sf1 = 0
     current_line_content = ''
     # result_dict should at least contain is_success and comments
     result_dict = ds3_preprocessor.run_all(program_listing, profile_list)
@@ -392,13 +406,13 @@ def make_dsb_with_exception(program_listing, profile_list=None):
             print(f'{key}: {result_dict[key]}')
         print("\n\n\n>>>>>>>>>> END ERROR REPORT\n\n")
         current_line_content = result_dict['error_line_str']
-        raise ValueError(result_dict['comments'])
+        return result_dict, None
 
     if_skip_table = result_dict['if_skip_table']
     if_info_list = result_dict["if_info"]
     while_lookup = result_dict['while_table_bidirectional']
     var_lookup = result_dict['var_table']
-    compact_program_listing = [x[1] for x in result_dict['compact_listing']]
+    compact_program_listing = result_dict['compact_listing']
     label_dict = {}
     func_lookup = result_dict['func_table']
     str_lookup = {}
@@ -407,8 +421,9 @@ def make_dsb_with_exception(program_listing, profile_list=None):
 
     print("--------- Program Listing After Preprocessing: ---------")
 
-    for index, item in enumerate(compact_program_listing):
-        print(str(index+1).ljust(4), item)
+    for index,line_obj in enumerate(compact_program_listing):
+        line_obj.preprocessed_lnum_ssf1 = index+1
+        print(f"{str(line_obj.preprocessed_lnum_ssf1):<4} {str(line_obj.lnum_sf1):<4} {line_obj.content}")
     print()
 
     assembly_listing = []
@@ -418,8 +433,11 @@ def make_dsb_with_exception(program_listing, profile_list=None):
     first_instruction['oparg'] = ((DS_VM_VERSION % 0xf) << 8)
     assembly_listing.append(first_instruction)
 
-    for lnum, this_line in enumerate(compact_program_listing):
-        lnum += 1
+    for line_obj in compact_program_listing:
+        lnum = line_obj.lnum_sf1
+        pp_lnum = line_obj.preprocessed_lnum_ssf1
+        this_line = line_obj.content
+        current_line_number_sf1 = lnum
         current_line_content = this_line
         this_instruction = get_empty_instruction()
         this_instruction['comment'] = this_line
@@ -489,7 +507,7 @@ def make_dsb_with_exception(program_listing, profile_list=None):
         elif this_line.startswith(cmd_STRING) or first_word == cmd_OLED_PRINT:
             str_content = this_line.split(' ', 1)[-1]
             if str_content not in str_lookup:
-                str_lookup[str_content] = lnum
+                str_lookup[str_content] = pp_lnum
             if first_word == cmd_STRING:
                 this_instruction['opcode'] = OP_STR
             elif first_word == cmd_STRINGLN:
@@ -624,6 +642,7 @@ def make_dsb_with_exception(program_listing, profile_list=None):
     VAR_SIZE_BYTES = 2
     var_addr_dict = {}
     var_count = 0
+    # assign address to all variables
     for item in var_lookup:
         if item in reserved_variable_dict:
             var_addr_dict[item] = reserved_variable_dict[item]
@@ -676,6 +695,7 @@ def make_dsb_with_exception(program_listing, profile_list=None):
             item['oparg'] = label_to_addr_dict[item['oparg']]
         if isinstance(item['oparg'], int) is False:
             current_line_content = item['comment']
+            current_line_number_sf1 = item['lnum_sf1']
             raise ValueError("Unknown variable")
         item['oparg'] = int(item['oparg'])
 
@@ -708,14 +728,14 @@ def make_dsb_with_exception(program_listing, profile_list=None):
     # print("str_bin_start:", str_bin_start)
     # print("str_list:", str_list)
     print(f'Binary Size: {len(output_bin_array)} Bytes')
-    return output_bin_array
+    return None, output_bin_array
 
 def make_dsb_no_exception(program_listing, profile_list=None):
     try:
-        return None, make_dsb_with_exception(program_listing, profile_list)
+        return make_dsb_with_exception(program_listing, profile_list)
     except Exception as e:
-        print(traceback.format_exc())
-        return {'comments':str(e), 'line_content':current_line_content}, None
+        print("MDNE:", traceback.format_exc())
+        return {'comments':str(e), 'error_line_str':current_line_content, 'error_line_number_starting_from_1':current_line_number_sf1}, None
 
 if __name__ == "__main__":
 
@@ -724,12 +744,19 @@ if __name__ == "__main__":
         exit()
 
     text_file = open(sys.argv[1])
-    program_listing = text_file.read().split('\n')
+    text_listing = text_file.read().split('\n')
     text_file.close()
 
-    status, bin_arr = make_dsb_no_exception(program_listing)
+    program_listing = []
+    for index, item in enumerate(text_listing):
+        program_listing.append(ds_line(item, index+1))
+
+    status_dict, bin_arr = make_dsb_no_exception(program_listing)
+
     if bin_arr is None:
-        print(status)
+        print("\n\nError Details:")
+        for key in status_dict:
+            print(f'{key}: {status_dict[key]}')
         exit()
 
     bin_out = open(sys.argv[2], 'wb')

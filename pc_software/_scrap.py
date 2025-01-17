@@ -1,4 +1,24 @@
 
+for item in new_program_listing:
+        print(item)
+    exit()
+
+
+def make_dsb_no_exception(program_listing, profile_list=None):
+    try:
+        return None, make_dsb_with_exception(program_listing, profile_list)
+    except Exception as e:
+        print(traceback.format_exc())
+        return {'comments':str(e), 'line_content':current_line_content}, None
+
+
+
+def find_index(lst, query):
+    for index, item in enumerate(lst):
+        if query in item:
+            return index
+    return None
+
 # def is_root():
 #     return os.getuid() == 0
 

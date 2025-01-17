@@ -63,7 +63,7 @@
 #define OP_VMINFO 255
 
 #define INSTRUCTION_SIZE_BYTES 3
-#define STACK_SIZE 16
+#define MY_STACK_SIZE 16
 
 #define EXE_OK 0
 
@@ -102,6 +102,7 @@
 #define _IS_SCROLLLOCK_ON (0xffff - 16)
 #define _DONT_REPEAT (0xffff - 17)
 #define _THIS_KEYID (0xffff - 18)
+#define _DP_MODEL (0xffff - 19)
 
 typedef struct
 {
@@ -118,17 +119,24 @@ typedef struct
 #define EPILOGUE_SAVE_COLOR_STATE 0x2
 #define EPILOGUE_NEED_OLED_RESTORE 0x4
 #define EPILOGUE_DONT_AUTO_REPEAT 0x8
+#define EPILOGUE_SAVE_GV 0x10
 
 #define BIN_BUF_SIZE 65536
 #define VAR_BUF_SIZE 128
 
+#define GLOBAL_VARIABLE_COUNT 16
+#define GLOBAL_VARIABLE_OFFSET 64
+#define GLOBAL_VARIABLE_START (BIN_BUF_SIZE - 1 - GLOBAL_VARIABLE_OFFSET)
+#define GLOBAL_VARIABLE_END_INCLUSIVE (GLOBAL_VARIABLE_START - GLOBAL_VARIABLE_COUNT + 1)
+
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 extern uint8_t bin_buf[BIN_BUF_SIZE];
-extern uint8_t key_press_count[MAX_TOTAL_SW_COUNT];
 extern uint8_t allow_abort;
 extern uint8_t kb_led_status;
+extern uint16_t gv_buf[GLOBAL_VARIABLE_COUNT];
 
 void run_dsb(ds3_exe_result* er, uint8_t this_key_id, char* dsb_path);
+
 #endif
 

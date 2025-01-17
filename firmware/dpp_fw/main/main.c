@@ -38,11 +38,27 @@ added BT mode option: Auto/Always/Never
 2024 12 18
 fixed dead key behaviour
 
+1.0.4
+2025 01 06
+Each profile now has their own keypress counter
+
+1.0.5
+2025 01 07
+added _DP_MODEL reserved variable
+fixed BT unpair typo
+adjusted keypress counter increment logic
+
+1.1.0
+Persistent global variables $_GV0 to $_GV15
+Waking up from sleep with +/- button no longer changes profile
+
+1.1.1
+Fixed `DP_SLEEP` wakes up right away
 */
 
 uint8_t fw_version_major = 1;
-uint8_t fw_version_minor = 0;
-uint8_t fw_version_patch = 3;
+uint8_t fw_version_minor = 1;
+uint8_t fw_version_patch = 1;
 uint8_t dsvm_version = 1;
 
 static const char *TAG = "MAIN";
@@ -132,6 +148,7 @@ void app_main(void)
     }
 
     profile_init();
+    load_gv();
     is_profile_load_complete = 1;
 
     xTaskCreate(keypress_task, "keypress_task", KEYPRESS_TASK_STACK_SIZE, NULL, 6, NULL);

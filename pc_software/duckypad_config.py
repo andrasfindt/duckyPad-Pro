@@ -19,6 +19,8 @@ import hid_op
 import make_bytecode
 from shared import *
 import my_compare
+from keywords import *
+import traceback
 
 """
 0.13.5
@@ -127,9 +129,17 @@ updated linux "need sudo" text box
 2.0.4 2024 12 26
 Updated mac and linux unmount command
 
+2.1.0 2025 01 06
+Persistent global variables $_GV0 to $_GV15
+Fixed variables name parsing bug
+
+2.2.0
+2025 01 17
+Updated preprocessor with improved line numbering memory
+Fixed a bug in preprocessing long STRINGLN commands
 """
 
-THIS_VERSION_NUMBER = '2.0.4'
+THIS_VERSION_NUMBER = '2.2.0'
 MIN_DUCKYPAD_FIRMWARE_VERSION = "1.0.0"
 MAX_DUCKYPAD_FIRMWARE_VERSION = "1.5.0"
 
@@ -188,6 +198,12 @@ def reset_key_button_relief():
 
 def rgb_to_hex(rgb_tuple):
     return '#%02x%02x%02x' % rgb_tuple
+
+def make_list_of_ds_line_obj_from_str_listing(pgm_listing):
+    obj_list = []
+    for index, item in enumerate(pgm_listing):
+        obj_list.append(ds_line(item, index+1))
+    return obj_list
 
 def ui_reset():
     global selected_key
@@ -650,10 +666,14 @@ def profile_rename_click():
 def validate_data_objs(save_path):
     # update path and indexs of profile and keys
     for profile_index, this_profile in enumerate(profile_list):
-        this_profile.path = os.path.join(save_path, 'profile'+str(profile_index+1)+'_'+str(this_profile.name))
+        this_profile.path = os.path.join(save_path, f"profile{profile_index + 1}_{this_profile.name}")
         for key_index, this_key in enumerate(this_profile.keylist):
             if this_key is None:
                 continue
+            if this_key.script is None:
+                this_key.script = ""
+            if this_key.script_on_release is None:
+                this_key.script_on_release = ""
             this_key.path = os.path.join(this_profile.path, 'key'+str(key_index+1)+'.txt')
             this_key.path_on_release = os.path.join(this_profile.path, 'key'+str(key_index+1)+'-release.txt')
             this_key.index = key_index + 1
@@ -671,18 +691,28 @@ def compile_all_scripts():
     try:
         for this_profile in profile_list:
             for this_key in this_profile.keylist:
-                if this_key is not None:
-                    this_key.binary_array = make_bytecode.make_dsb_with_exception(make_final_script(this_key, this_key.script.lstrip().split('\n')), profile_list)
-                    if len(this_key.script_on_release.lstrip()) > 0:
-                        this_key.binary_array_on_release = make_bytecode.make_dsb_with_exception(make_final_script(this_key, this_key.script_on_release.lstrip().split('\n')), profile_list)
-                    if len(this_key.binary_array) >= 65500 or (this_key.binary_array_on_release is not None and len(this_key.binary_array_on_release) >= 65500):
-                        messagebox.showerror("Error", f'Script size too large!\n\nProfile: {this_profile.name}\nKey: {this_key.name}')
-                        return False
+                if this_key is None:
+                    continue
+                text_list = make_final_script(this_key, this_key.script.lstrip().split('\n'))
+                obj_list = make_list_of_ds_line_obj_from_str_listing(text_list)
+                result_dict, bin_arr = make_bytecode.make_dsb_with_exception(obj_list, profile_list)
+                if bin_arr is None:
+                    raise ValueError("Compile failed")
+                this_key.binary_array = bin_arr
+                if len(this_key.script_on_release.lstrip()) > 0:
+                    tl_or = make_final_script(this_key, this_key.script_on_release.lstrip().split('\n'))
+                    ol_or = make_list_of_ds_line_obj_from_str_listing(tl_or)
+                    result_dict, bin_arr = make_bytecode.make_dsb_with_exception(ol_or, profile_list)
+                    if bin_arr is None:
+                        raise ValueError("Compile failed")
+                    this_key.binary_array_on_release = bin_arr
+                if len(this_key.binary_array) >= 65000 or (this_key.binary_array_on_release is not None and len(this_key.binary_array_on_release) >= 65000):
+                    messagebox.showerror("Error", f'Script size too large!\n\nProfile: {this_profile.name}\nKey: {this_key.name}')
+                    return False
         return True
     except Exception as e:
-        error_msg = "Code contains error!\n"
-        error_msg += f"Profile [{this_profile.name}] Key [{this_key.name}]:\n"
-        error_msg += str(e)
+        error_msg = f"ERROR on Profile [{this_profile.name}] Key [{this_key.name}]:\n\n-------\n"
+        error_msg += str(traceback.format_exc())
         messagebox.showerror("Error", error_msg)
     return False
 
@@ -1415,15 +1445,9 @@ on_release_rb = Radiobutton(scripts_lf, text="On Release", variable=on_press_rel
 on_release_rb.place(x=scaled_size(150), y=scaled_size(20))
 root.update()
 
-def find_index(lst, query):
-    for index, item in enumerate(lst):
-        if query in item:
-            return index
-    return None        
-
-last_check_syntax_program_listing = []
+last_check_syntax_listing = []
 def check_syntax():
-    global last_check_syntax_program_listing
+    global last_check_syntax_listing
     if is_key_selected() == False:
         return
     profile_index = profile_lstbox.curselection()[0]
@@ -1432,22 +1456,19 @@ def check_syntax():
     program_listing = profile_list[profile_index].keylist[selected_key].script.split('\n')
     if on_press_release_rb_var.get() == 1:
         program_listing = profile_list[profile_index].keylist[selected_key].script_on_release.split('\n')
-    if program_listing == last_check_syntax_program_listing:
+    if program_listing == last_check_syntax_listing:
         # print("check_syntax: same")
         return
-    result_dict, bin_arr = make_bytecode.make_dsb_no_exception(program_listing, profile_list)
-    last_check_syntax_program_listing = program_listing.copy()
+    last_check_syntax_listing = program_listing.copy()
+    ds_line_obj_list = make_list_of_ds_line_obj_from_str_listing(program_listing)
+    result_dict, bin_arr = make_bytecode.make_dsb_no_exception(ds_line_obj_list, profile_list)
     script_textbox.tag_remove("error", '1.0', 'end')
     if result_dict is None:
         check_syntax_label.config(text="Code seems OK..", fg="green")       
         return
-    error_lnum = find_index(program_listing, result_dict['line_content'])
+    error_lnum = result_dict['error_line_number_starting_from_1']
     error_text = result_dict['comments']
-    if error_lnum is not None:
-        error_lnum += 1
-        script_textbox.tag_add("error", str(error_lnum)+".0", str(error_lnum)+".0 lineend")
-    else:
-        error_text = f"Error on line: {result_dict['line_content']}\n{result_dict['comments']}"
+    script_textbox.tag_add("error", str(error_lnum)+".0", str(error_lnum)+".0 lineend")
     check_syntax_label.config(text=error_text, fg='red')
 
 check_syntax_label = Label(scripts_lf, text="")
