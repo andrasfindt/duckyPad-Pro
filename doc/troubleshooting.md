@@ -1,6 +1,6 @@
 # Common Issues / Troubleshooting
 
-[Get duckyPad Pro](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./getting_started.md) | [Table of Contents](#table-of-contents)
+[Get duckyPad Pro](https://www.tindie.com/products/37399/) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./getting_started.md) | [Table of Contents](#table-of-contents)
 
 ----
 
@@ -13,6 +13,7 @@ Some commonly encountered issues are explained here.
 - [The RGB backlight is flickering slightly!](#the-rgb-backlight-is-flickering-slightly)
 - [The RGB backlight is too bright!](#the-rgb-backlight-is-too-bright)
 - [Will OLED suffer burn-in?](#will-oled-suffer-burn-in)
+- [I want to replace the OLED screen!](#i-want-to-replace-the-oled-screen)
 - [Numpad keys doesn't work!](#numpad-keys-doesnt-work)
 
 ## Join Our Discord!
@@ -53,11 +54,13 @@ Make sure the **pins are straight** and aim for hot-swap socket holes.
 
 ## Letters and symbols come out wrong!
 
-* **Long-press** `+/-` button.
+* **Long-press** `+/-` button
 
-* Select the correct keyboard layout.
+* Select the correct keyboard layout
 
-* Read more about [writing your own keymaps](https://github.com/dekuNukem/duckyPad/blob/master/keymap_instructions.md).
+* Press any key to save & quit
+
+* Read more about [writing your own keymaps](https://github.com/dekuNukem/duckyPad/blob/master/keymap_instructions.md)
 
 ## My script behaves inconsistently!
 
@@ -75,17 +78,20 @@ Slow it down with the following commands:
 
 ## I want to use my own SD card!
 
-* (Optional) Copy off existing files of old SD card.
+* Mount the SD card on PC
+* Format it in `FAT or FAT32`:
 
-* Format the new SD card in `FAT or FAT32`:
+![Alt text](../resources/photos/trouble/sd_format.png)
 
-![Alt text](../resources/photos/trouble/format.PNG)
+* Press `Backup...` button in the configurator
 
-* Copy all the files back.
+![Alt text](../resources/photos/trouble/backup.png)
 
-* You can also download the [sample profiles](../resources/sample_profiles/sample_profiles.zip) and copy everything to the **root of your SD card**:
+* Select a backup and copy files back to the **root of your SD card**
 
 ![Alt text](../resources/photos/trouble/sample_pf.png)
+
+* You can also download the [sample profiles](../resources/sample_profiles/sample_profiles.zip) and start fresh
 
 ## The RGB backlight is flickering slightly!
 
@@ -104,6 +110,30 @@ Measures have been taken to prevent burn-in.
 * Screen dims after 1 minute.
 
 * duckyPad goes to sleep after 5 minutes (adjustable).
+
+## I want to replace the OLED screen!
+
+* [Follow this guide in reverse](troubleshooting.md) until PCB is removed
+
+* **Slowly and gently** push the black tabs outwards
+
+![Alt text](../resources/photos/trouble/oled.jpeg)
+
+* Gently pull on the ribbon cable to release
+
+* Use a hair dryer on the screen to soften the adhesive
+
+* Insert something thin underneath the OLED to pry it up
+
+* Clean off any residues 
+
+* Line up the new screen to the guide line, and stick it on.
+
+* Insert the ribbon cable into connector, the gold contact should be barely visible (see photo above).
+
+* Push the black tab back in to lock.
+
+* Try it out and reassemble!
 
 ## Numpad keys doesn't work!
 

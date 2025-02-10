@@ -1,6 +1,6 @@
 # duckyPad Assembly Guide
 
-[Get duckyPad Pro](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./getting_started.md) | [Table of Contents](#table-of-contents)
+[Get duckyPad Pro](https://www.tindie.com/products/37399/) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./getting_started.md) | [Table of Contents](#table-of-contents)
 
 ------
 
@@ -46,9 +46,9 @@ Look at the back of the PCB. Identify the sockets:
 
 ![Alt text](../resources/photos/instructions/ant.png)
 
-Match the receptacles, push straight down.
+Match the receptacles, push straight down. 
 
-Careful not to bump into nearby components.
+If too tight, put some soft cushion on the other side, and use the flat end of a pen for more leverage. Careful not to slip and damage nearby components.
 
 It should click in place. Check it's fully seated.
 

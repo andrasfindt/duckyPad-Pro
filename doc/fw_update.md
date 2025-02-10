@@ -1,31 +1,20 @@
 # duckyPad Pro Firmware Update Guide
 
-[Get duckyPad Pro](https://www.kickstarter.com/projects/dekunukem/duckypad-pro-advanced-macro-scripting-beyond-qmk-via) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./getting_started.md) | [Table of Contents](#table-of-contents)
+[Get duckyPad Pro](https://www.tindie.com/products/37399/) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./getting_started.md) | [Table of Contents](#table-of-contents)
 
 -----
 
 ## Latest Firmware
 
-#### 1.1.0
+#### 1.1.1
 
-9 Jan 2025
+6 Feb 2025
 
-* 🆕 Persistent Global Variables
-	* `$_GV0` to `$_GV15`
-	* Available on all profiles
-	* Persistent over reboots
-
-* 🆕 Added `_DP_MODEL` reserved variable
-
-* 🐞 Adjusted keypress counter implementation and logic
-
-* 🐞 Waking up from sleep with +/- button no longer changes profile
-
-* 🐞 Fixed typos
+* 🐞 Fixed `DP_SLEEP` wakes up right away
 
 👇👇👇👇👇👇👇👇👇👇
 
-[Download Here](https://github.com/dekuNukem/duckyPad-Pro/raw/master/firmware/DPP_FW_1.1.0_f0043533.bin)
+[Download Here](https://github.com/dekuNukem/duckyPad-Pro/raw/master/firmware/DPP_FW_1.1.1_8d7c8b0f.bin)
 
 ☝️☝️☝️☝️☝️☝️☝️☝️☝️☝️☝️
 
@@ -62,6 +51,23 @@
 ![Alt text](../resources/photos/tinker/newver.png)
 
 ## Version History
+
+#### 1.1.0
+
+9 Jan 2025
+
+* 🆕 Persistent Global Variables
+	* `$_GV0` to `$_GV15`
+	* Available on all profiles
+	* Persistent over reboots
+
+* 🆕 Added `_DP_MODEL` reserved variable
+
+* 🐞 Adjusted keypress counter implementation and logic
+
+* 🐞 Waking up from sleep with +/- button no longer changes profile
+
+* 🐞 Fixed typos
 
 #### 1.0.3
 
