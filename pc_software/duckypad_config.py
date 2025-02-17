@@ -1464,7 +1464,6 @@ def check_syntax():
     if on_press_release_rb_var.get() == 1:
         program_listing = profile_list[profile_index].keylist[selected_key].script_on_release.split('\n')
     if program_listing == last_check_syntax_listing:
-    if program_listing == last_check_syntax_listing:
         # print("check_syntax: same")
         return
     last_check_syntax_listing = program_listing.copy()
